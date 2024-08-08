@@ -2,7 +2,6 @@ package exporter
 
 import (
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -207,23 +206,6 @@ type lineResult struct {
 	value int
 }
 
-func parseNumber(s string) (int, error) {
-	v, err := strconv.Atoi(s)
-	if err == nil {
-		return v, nil
-	}
-	if !errors.Is(err, strconv.ErrSyntax) {
-		return 0, err
-	}
-
-	vv, err := strconv.ParseFloat(s, 64)
-	if err != nil {
-		return 0, err
-	}
-
-	return int(vv), nil
-}
-
 func (e *Exporter) parseKeyValueResponse(uri string) ([]lineResult, error) {
 	data, err := e.handleResponse(uri)
 	if err != nil {
@@ -243,7 +225,7 @@ func (e *Exporter) parseKeyValueResponse(uri string) ([]lineResult, error) {
 			return nil, fmt.Errorf("parseKeyValueResponse: unexpected %d line: %s", i, line)
 		}
 		k := strings.TrimSpace(parts[0])
-		v, err := parseNumber(strings.TrimSpace(parts[1]))
+		v, err := strconv.Atoi(strings.TrimSpace(parts[1]))
 		if err != nil {
 			return nil, err
 		}
