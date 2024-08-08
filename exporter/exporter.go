@@ -2,6 +2,7 @@ package exporter
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -108,7 +109,7 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 			Name:      metricName(m.key),
 			Help:      "Number of " + m.key + " currently processed",
 		}, []string{}).WithLabelValues()
-		newMetric.Set(m.value)
+		newMetric.Set(float64(m.value))
 		newMetric.Collect(ch)
 	}
 
@@ -123,7 +124,7 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) error {
 			Name:      metricName(am.key),
 			Help:      "Number of " + am.key + " async processed",
 		}, []string{}).WithLabelValues()
-		newMetric.Set(am.value)
+		newMetric.Set(float64(am.value))
 		newMetric.Collect(ch)
 	}
 
@@ -203,16 +204,24 @@ func (e *Exporter) handleResponse(uri string) ([]byte, error) {
 
 type lineResult struct {
 	key   string
-	value float64
+	value int
 }
 
-func parseNumber(s string) (float64, error) {
-	v, err := strconv.ParseFloat(s, 64)
+func parseNumber(s string) (int, error) {
+	v, err := strconv.Atoi(s)
+	if err == nil {
+		return v, nil
+	}
+	if !errors.Is(err, strconv.ErrSyntax) {
+		return 0, err
+	}
+
+	vv, err := strconv.ParseFloat(s, 64)
 	if err != nil {
 		return 0, err
 	}
 
-	return v, nil
+	return int(vv), nil
 }
 
 func (e *Exporter) parseKeyValueResponse(uri string) ([]lineResult, error) {
