@@ -1,5 +1,8 @@
 # Clickhouse Exporter for Prometheus
 
+[![Build Status](https://travis-ci.org/Percona-Lab/clickhouse_exporter.svg?branch=master)](https://travis-ci.org/Percona-Lab/clickhouse_exporter)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Percona-Lab/clickhouse_exporter)](https://goreportcard.com/report/github.com/Percona-Lab/clickhouse_exporter)
+
 This is a simple server that periodically scrapes [ClickHouse](https://clickhouse.tech/) stats and exports them via HTTP for [Prometheus](https://prometheus.io/)
 consumption.
 
