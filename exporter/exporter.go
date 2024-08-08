@@ -42,7 +42,7 @@ func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
 	metricsURI.RawQuery = q.Encode()
 
 	asyncMetricsURI := uri
-	q.Set("query", "select metric, toInt64(value) from system.asynchronous_metrics")
+	q.Set("query", "select metric, toInt64(value) from system.asynchronous_metrics where not match(metric, '^(OS|CPU|Block|Filesystem|Network|EDAC|LoadAverage)')")
 	asyncMetricsURI.RawQuery = q.Encode()
 
 	eventsURI := uri
