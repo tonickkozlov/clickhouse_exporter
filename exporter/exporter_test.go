@@ -1,6 +1,7 @@
 package exporter
 
 import (
+	"crypto/tls"
 	"net/url"
 	"testing"
 
@@ -12,7 +13,7 @@ func TestScrape(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	exporter := NewExporter(*clickhouseUrl, false, "", "")
+	exporter := NewExporter(*clickhouseUrl, &tls.Config{}, Credentials{})
 
 	t.Run("Describe", func(t *testing.T) {
 		ch := make(chan *prometheus.Desc)

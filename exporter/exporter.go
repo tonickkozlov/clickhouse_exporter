@@ -19,6 +19,16 @@ const (
 	namespace = "clickhouse" // For Prometheus metrics.
 )
 
+// Credentials allow to either specify a username/password pair
+// or a path to a TLS certificate that identifies the user:
+// https://clickhouse.com/docs/en/guides/sre/ssl-user-auth
+type Credentials struct {
+	User     string
+	Password string
+	CertPath string
+	KeyPath  string
+}
+
 // Exporter collects clickhouse stats from the given URI and exports them using
 // the prometheus metrics package.
 type Exporter struct {
@@ -30,12 +40,11 @@ type Exporter struct {
 
 	scrapeFailures prometheus.Counter
 
-	user     string
-	password string
+	credentials Credentials
 }
 
 // NewExporter returns an initialized Exporter.
-func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
+func NewExporter(uri url.URL, TLSClientConfig *tls.Config, credentials Credentials) *Exporter {
 	q := uri.Query()
 	metricsURI := uri
 	q.Set("query", "select metric, toInt64(value) from system.metrics")
@@ -65,12 +74,11 @@ func NewExporter(uri url.URL, insecure bool, user, password string) *Exporter {
 		}),
 		client: &http.Client{
 			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
+				TLSClientConfig: TLSClientConfig,
 			},
 			Timeout: 30 * time.Second,
 		},
-		user:     user,
-		password: password,
+		credentials: credentials,
 	}
 }
 
@@ -180,9 +188,14 @@ func (e *Exporter) handleResponse(uri string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if e.user != "" && e.password != "" {
-		req.Header.Set("X-ClickHouse-User", e.user)
-		req.Header.Set("X-ClickHouse-Key", e.password)
+	if e.credentials.User != "" {
+		req.Header.Set("X-ClickHouse-User", e.credentials.User)
+	}
+	// only X-ClickHouse-Key or X-ClickHouse-SSL-Certificate-Auth can be set but not both
+	if e.credentials.Password != "" {
+		req.Header.Set("X-ClickHouse-Key", e.credentials.Password)
+	} else if e.credentials.CertPath != "" {
+		req.Header.Set("X-ClickHouse-SSL-Certificate-Auth", "on")
 	}
 	resp, err := e.client.Do(req)
 	if err != nil {
