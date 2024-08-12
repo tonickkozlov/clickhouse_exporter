@@ -36,7 +36,7 @@ func main() {
 
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: *insecure,
-		MinVersion:         tls.VersionTLS13,
+		MinVersion:         tls.VersionTLS12,
 	}
 
 	if password == "" && *identityCertPath != "" {
@@ -71,7 +71,13 @@ func setupMTLS(tlsConfig *tls.Config) {
 	if err != nil {
 		log.Errorf("could not set up cert watcher for certificate %s: %s", *identityCertPath, err.Error())
 	} else {
-		go certWatcher.Start(context.Background())
+		go func() {
+			log.Infof("watching identity cert: %s, key file: %s", *identityCertPath, *identityKeyPath)
+			err := certWatcher.Start(context.Background())
+			if err != nil {
+				log.Fatalf("cert watcher failed: %s", err.Error())
+			}
+		}()
 		tlsConfig.GetClientCertificate = certWatcher.GetClientCertificate
 	}
 }
